@@ -4,6 +4,8 @@
 in vec4 vertexPosition;
 in vec2 vertexUV;
 in vec3 vertexNormal;
+in vec3 vertTangent;
+in vec3 vertBiTangent;
 //layout (location = 1) in vec3 vertexColor;
 
 

@@ -18,6 +18,8 @@ VertexArrayObject::VertexArrayObject(string objectFile, GLuint program)
 	this->vertex_data.clear();
 	this->normal_data.clear();
 	this->uv_data.clear();
+	this->tangent_data.clear();
+	this->bitangent_data.clear();
 
 	std::size_t pos = objectFile.find(".");
 	string ext = objectFile.substr(pos);
@@ -31,7 +33,7 @@ VertexArrayObject::VertexArrayObject(string objectFile, GLuint program)
 		this->verticies = thisObj.importedVerticies;
 		this->index_data = thisObj.importedIndexData;
 
-		
+
 
 		this->GetData();
 	}
@@ -39,8 +41,6 @@ VertexArrayObject::VertexArrayObject(string objectFile, GLuint program)
 	{
 		this->BorstImport(objectFile);
 	}
-
-	
 
 	this->matrix_loc = glGetUniformLocation(this->program, "Matrix");
 	this->vertposition_loc = glGetAttribLocation(this->program, "vertexPosition");
@@ -65,7 +65,7 @@ VertexArrayObject::VertexArrayObject(string objectFile, GLuint program)
 		GL_FALSE, // Is normalized
 		0, ((void*)0));
 	glEnableVertexAttribArray(this->vertposition_loc);
-	
+
 	glGenBuffers(1, &this->uvBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, this->uvBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(&this->uv_data[0])*this->uv_data.size(), &this->uv_data[0], GL_DYNAMIC_DRAW);
@@ -77,13 +77,34 @@ VertexArrayObject::VertexArrayObject(string objectFile, GLuint program)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(&this->normal_data[0])*this->normal_data.size(), &this->normal_data[0], GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(this->normal_loc, 3, GL_FLOAT, GL_FALSE, 0, ((void*)0));
 	glEnableVertexAttribArray(this->normal_loc);
-	
+
 	glGenBuffers(1, &this->indexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 		sizeof(&this->index_data[0])*this->index_data.size(),
 		&this->index_data[0], GL_DYNAMIC_DRAW);
 
+	if (tangent_data.size() > 0)
+	{
+		this->tangent_loc = glGetAttribLocation(this->program, "vertTangent");
+
+		glGenBuffers(1, &this->tangentBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, this->tangentBuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(&this->tangent_data[0])*this->tangent_data.size(), &this->tangent_data[0], GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(this->tangent_loc, 3, GL_FLOAT, GL_FALSE, 0, ((void*)0));
+		glEnableVertexAttribArray(this->tangent_loc);
+	}
+
+	if (bitangent_data.size() > 0)
+	{
+		this->bitangent_loc = glGetAttribLocation(this->program, "vertBiTangent");
+
+		glGenBuffers(1, &this->bitangentBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, this->bitangentBuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(&this->bitangent_data[0])*this->bitangent_data.size(), &this->bitangent_data[0], GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(this->bitangent_loc, 3, GL_FLOAT, GL_FALSE, 0, ((void*)0));
+		glEnableVertexAttribArray(this->bitangent_loc);
+	}
 }
 
 VertexArrayObject::~VertexArrayObject()

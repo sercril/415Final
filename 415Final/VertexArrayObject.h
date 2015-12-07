@@ -39,7 +39,8 @@ class VertexArrayObject
 		void LoadVerticies(std::vector<GLfloat> vertexData, std::vector<GLfloat> normalData, std::vector<GLfloat> uvData);
 
 		GLuint vertexBuffer, colorBuffer, indexBuffer, uvBuffer, normalBuffer, 
-			vertposition_loc, vertcolor_loc, vertex_UV, textureLocation, normal_loc;
+			vertposition_loc, vertcolor_loc, vertex_UV, textureLocation, normal_loc,
+			tangentBuffer, bitangentBuffer, tangent_loc, bitangent_loc;
 
 		std::vector<GLfloat> vertex_data, uv_data, normal_data, tangent_data, bitangent_data;
 		

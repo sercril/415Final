@@ -280,7 +280,7 @@ void buildTable(gmtl::Vec3f floorDimensions)
 void buildGraph()
 {
 	
-	SceneObject* ball = new SceneObject("OBJs/SphereFull.txt", ballRadius, program);
+	SceneObject* ball = new SceneObject("OBJs/SphereFull.txt", ballRadius, normal_program);
 	SceneObject* ball2 = new SceneObject("OBJs/smoothSphere.obj", ballRadius, program);
 	SceneObject* ball3 = new SceneObject("OBJs/smoothSphere.obj", ballRadius, program);
 	gmtl::Vec3f floorDimensions = gmtl::Vec3f(150.0f, 5.0f, 150.0f);
@@ -607,7 +607,7 @@ void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv)
 		for (int i = 0; i < graph.size(); ++i)
 		{
 
-			
+			glUseProgram(graph[i]->VAO.program);
 	
 			glBindVertexArray(graph[i]->VAO.vertexArray);
 			
@@ -849,7 +849,7 @@ void init()
 	{ GL_NONE, NULL } };
 
 	program = LoadShaders(shaders);	
-	glUseProgram(program);
+	
 	//Get the shader parameter locations for passing data to shaders
 	NormalMatrix = glGetUniformLocation(program, "NormalMatrix");
 	lightPosition_loc = glGetUniformLocation(program, "lightPosition");	
@@ -858,23 +858,20 @@ void init()
 	specularLight_loc = glGetUniformLocation(program, "specularLight");
 	
 
-	//texture_location = glGetUniformLocation(program, "texture_Colors");
-
-	//glBindTexture(GL_TEXTURE_2D, texture_location);
 
 	// Load/compile/link shaders and set to use for rendering
-	//ShaderInfo normal_shaders[] = { { GL_VERTEX_SHADER, "Normal.vert" },
-	//{ GL_FRAGMENT_SHADER, "Normal.frag" },
-	//{ GL_NONE, NULL } };
+	ShaderInfo normal_shaders[] = { { GL_VERTEX_SHADER, "Normal.vert" },
+	{ GL_FRAGMENT_SHADER, "Normal.frag" },
+	{ GL_NONE, NULL } };
 
-	//normal_program = LoadShaders(normal_shaders);
+	normal_program = LoadShaders(normal_shaders);
 
-	////Get the shader parameter locations for passing data to shaders
-	//NormalMatrix = glGetUniformLocation(normal_program, "NormalMatrix");
-	//lightPosition_loc = glGetUniformLocation(normal_program, "lightPosition");
-	//ambientLight_loc = glGetUniformLocation(normal_program, "ambientLight");
-	//diffuseLight_loc = glGetUniformLocation(normal_program, "diffuseLight");
-	//specularLight_loc = glGetUniformLocation(normal_program, "specularLight");
+	//Get the shader parameter locations for passing data to shaders
+	NormalMatrix = glGetUniformLocation(normal_program, "NormalMatrix");
+	lightPosition_loc = glGetUniformLocation(normal_program, "lightPosition");
+	ambientLight_loc = glGetUniformLocation(normal_program, "ambientLight");
+	diffuseLight_loc = glGetUniformLocation(normal_program, "diffuseLight");
+	specularLight_loc = glGetUniformLocation(normal_program, "specularLight");
 
 	gmtl::identity(view);
 	gmtl::identity(viewRotation);
