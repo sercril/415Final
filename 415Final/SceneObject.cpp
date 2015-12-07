@@ -61,11 +61,13 @@ void SceneObject::Init()
 	gmtl::identity(this->transform);
 	this->rotation = gmtl::Quatf(0.0f, 0.0f, 0.0f, 1.0f);
 
-
 	this->upVector_loc = glGetUniformLocation(this->VAO.program, "upVector");
 	this->specCoefficient_loc = glGetUniformLocation(this->VAO.program, "specCoefficient");
 	this->shine_loc = glGetUniformLocation(this->VAO.program, "shine");	
 	this->modelview_loc = glGetUniformLocation(this->VAO.program, "modelview");
+	this->texture_location = glGetUniformLocation(this->VAO.program, "texture_Colors");
+
+	glBindTexture(GL_TEXTURE_2D, this->texture_location);
 
 	this->specCoefficient = 0.1f;
 	this->shine = 0.5f;
@@ -83,13 +85,8 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 	gmtl::Matrix44f render = projection * newMV * this->scale;
 
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->texture.textureHeight, this->texture.textureWidth, 0, GL_RGB, GL_UNSIGNED_BYTE, this->texture.imageData);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
+	this->ApplyTexture(this->texture, GL_TEXTURE0, this->texture_location);
+	//this->ApplyTexture(this->normalMap, GL_TEXTURE1, this->normal_location);
 	
 	glUniformMatrix4fv(this->VAO.matrix_loc, 1, GL_FALSE, &render[0][0]);
 
@@ -157,4 +154,18 @@ void SceneObject::Move()
 gmtl::Vec3f SceneObject::GetPosition()
 {
 	return gmtl::Vec3f(float(this->translation[0][3]), float(this->translation[1][3]), float(this->translation[2][3]));
+}
+
+void SceneObject::ApplyTexture(Texture t, GLenum texID, GLuint loc)
+{
+	glActiveTexture(GL_TEXTURE0);
+	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t.textureHeight, t.textureWidth, 0, GL_RGB, GL_UNSIGNED_BYTE, t.imageData);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	
 }

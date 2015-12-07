@@ -80,12 +80,14 @@ public:
 	SceneObject* parent;
 	ObjectType type;
 	std::vector<SceneObject *> children;
-	Texture texture;
+	Texture texture, normalMap;
 
 private:
 	void Init();
+	void ApplyTexture(Texture t, GLenum texID, GLuint loc);
 
-	GLuint specCoefficient_loc, shine_loc, upVector_loc, modelview_loc;
+	GLuint specCoefficient_loc, shine_loc, upVector_loc, modelview_loc, 
+		texture_location, normal_location;
 };
 
 #endif __SCENE_OBJECT_H__

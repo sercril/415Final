@@ -59,9 +59,9 @@ float azimuth, elevation, ballRadius, ballDiameter, cameraZFactor,
 		screenWidth, screenHeight;
 
 
-GLuint program,
+GLuint program, normal_program, texture_location,
 		lightPosition_loc, ambientLight_loc, diffuseLight_loc, specularLight_loc, 
-		texture_location, NormalMatrix;
+		NormalMatrix;
 
 GLenum errCode;
 
@@ -606,6 +606,8 @@ void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv)
 
 		for (int i = 0; i < graph.size(); ++i)
 		{
+
+			
 	
 			glBindVertexArray(graph[i]->VAO.vertexArray);
 			
@@ -846,23 +848,33 @@ void init()
 	{ GL_FRAGMENT_SHADER, "Cube_Fragment_Shader.frag" },
 	{ GL_NONE, NULL } };
 
-	program = LoadShaders(shaders);
+	program = LoadShaders(shaders);	
 	glUseProgram(program);
-
 	//Get the shader parameter locations for passing data to shaders
 	NormalMatrix = glGetUniformLocation(program, "NormalMatrix");
-	lightPosition_loc = glGetUniformLocation(program, "lightPosition");
-	
+	lightPosition_loc = glGetUniformLocation(program, "lightPosition");	
 	ambientLight_loc = glGetUniformLocation(program, "ambientLight");
 	diffuseLight_loc = glGetUniformLocation(program, "diffuseLight");
 	specularLight_loc = glGetUniformLocation(program, "specularLight");
-
-	glActiveTexture(GL_TEXTURE0);
-
-	texture_location = glGetUniformLocation(program, "texture_Colors");
-	glBindTexture(GL_TEXTURE_2D, texture_location);
-
 	
+
+	//texture_location = glGetUniformLocation(program, "texture_Colors");
+
+	//glBindTexture(GL_TEXTURE_2D, texture_location);
+
+	// Load/compile/link shaders and set to use for rendering
+	//ShaderInfo normal_shaders[] = { { GL_VERTEX_SHADER, "Normal.vert" },
+	//{ GL_FRAGMENT_SHADER, "Normal.frag" },
+	//{ GL_NONE, NULL } };
+
+	//normal_program = LoadShaders(normal_shaders);
+
+	////Get the shader parameter locations for passing data to shaders
+	//NormalMatrix = glGetUniformLocation(normal_program, "NormalMatrix");
+	//lightPosition_loc = glGetUniformLocation(normal_program, "lightPosition");
+	//ambientLight_loc = glGetUniformLocation(normal_program, "ambientLight");
+	//diffuseLight_loc = glGetUniformLocation(normal_program, "diffuseLight");
+	//specularLight_loc = glGetUniformLocation(normal_program, "specularLight");
 
 	gmtl::identity(view);
 	gmtl::identity(viewRotation);
@@ -902,8 +914,6 @@ void display()
 
 	// Clear the color and depth buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
 
 	renderGraph(sceneGraph, view);
 	//Ask GL to execute the commands from the buffer
