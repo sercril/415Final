@@ -298,6 +298,7 @@ void buildGraph()
 	initialTranslation.setState(gmtl::Matrix44f::TRANS);
 	ball->AddTranslation(initialTranslation);
 	ball->SetTexture(LoadTexture("textures/Berry_Diffuse.ppm"));
+	ball->SetNormalMap(LoadTexture("textures/Berry_Normal.ppm"));
 	//ball->velocity = ZERO_VECTOR;
 	ball->acceleration = ZERO_VECTOR;
 

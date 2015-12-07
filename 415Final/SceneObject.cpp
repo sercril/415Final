@@ -61,13 +61,23 @@ void SceneObject::Init()
 	gmtl::identity(this->transform);
 	this->rotation = gmtl::Quatf(0.0f, 0.0f, 0.0f, 1.0f);
 
-	this->upVector_loc = glGetUniformLocation(this->VAO.program, "upVector");
+	
 	this->specCoefficient_loc = glGetUniformLocation(this->VAO.program, "specCoefficient");
 	this->shine_loc = glGetUniformLocation(this->VAO.program, "shine");	
 	this->modelview_loc = glGetUniformLocation(this->VAO.program, "modelview");
 	this->texture_location = glGetUniformLocation(this->VAO.program, "texture_Colors");
 
-	glBindTexture(GL_TEXTURE_2D, this->texture_location);
+	
+
+	if (this->VAO.tangent_data.size() > 0)
+	{
+		this->normal_location = glGetUniformLocation(this->VAO.program, "normal_Colors");
+	}
+	else
+	{
+		glBindTexture(GL_TEXTURE_2D, this->texture_location);
+	}
+	
 
 	this->specCoefficient = 0.1f;
 	this->shine = 0.5f;
@@ -76,6 +86,8 @@ void SceneObject::Init()
 
 	this->velocity = gmtl::Vec3f(0, 0, 0);
 
+	this->normalMap = Texture();
+
 }
 
 void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
@@ -83,15 +95,31 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 	gmtl::Matrix44f rotation = gmtl::make<gmtl::Matrix44f>(this->rotation);
 	gmtl::Matrix44f newMV = viewMatrix * this->translation * rotation;
 	gmtl::Matrix44f render = projection * newMV * this->scale;
-
+	gmtl::Matrix44f PM = projection * this->translation * rotation;
+	
 
 	this->ApplyTexture(this->texture, GL_TEXTURE0, this->texture_location);
-	//this->ApplyTexture(this->normalMap, GL_TEXTURE1, this->normal_location);
+
+	if (this->normalMap.textureWidth > 0)
+	{
+		GLuint PMMatrix_loc = glGetUniformLocation(this->VAO.program, "PMMatrix");
+		GLuint eyeUP_loc = glGetUniformLocation(this->VAO.program, "eyeUpVector");
+		
+		this->ApplyTexture(this->normalMap, GL_TEXTURE1, this->normal_location);
+		glUniformMatrix4fv(PMMatrix_loc, 1, GL_FALSE, &PM[0][0]);
+		glUniform3f(eyeUP_loc, viewMatrix[1][0], viewMatrix[1][1], viewMatrix[1][2]);
+	}
+	else
+	{
+		this->upVector_loc = glGetUniformLocation(this->VAO.program, "upVector");
+		glUniform3f(this->upVector_loc, viewMatrix[1][0], viewMatrix[1][1], viewMatrix[1][2]);
+	}
+
 	
 	glUniformMatrix4fv(this->VAO.matrix_loc, 1, GL_FALSE, &render[0][0]);
 
 
-	glUniform3f(this->upVector_loc, viewMatrix[1][0], viewMatrix[1][1], viewMatrix[1][2]);
+	
 	glUniformMatrix4fv(this->modelview_loc, 1, GL_FALSE, &newMV[0][0]);
 	glUniform1f(this->specCoefficient_loc, this->specCoefficient);
 	glUniform1f(this->shine_loc, this->shine);
@@ -115,6 +143,11 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 void SceneObject::SetTexture(Texture t)
 {
 	this->texture = t;
+}
+
+void SceneObject::SetNormalMap(Texture n)
+{
+	this->normalMap = n;
 }
 
 void SceneObject::AddTranslation(gmtl::Matrix44f t)
@@ -158,8 +191,8 @@ gmtl::Vec3f SceneObject::GetPosition()
 
 void SceneObject::ApplyTexture(Texture t, GLenum texID, GLuint loc)
 {
-	glActiveTexture(GL_TEXTURE0);
-	
+	glActiveTexture(texID);
+
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t.textureHeight, t.textureWidth, 0, GL_RGB, GL_UNSIGNED_BYTE, t.imageData);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -167,5 +200,9 @@ void SceneObject::ApplyTexture(Texture t, GLenum texID, GLuint loc)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
+	if (this->normalMap.textureWidth > 0)
+	{
+		glBindTexture(GL_TEXTURE_2D, loc);
+	}
 	
 }

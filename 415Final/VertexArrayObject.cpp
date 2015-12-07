@@ -33,8 +33,6 @@ VertexArrayObject::VertexArrayObject(string objectFile, GLuint program)
 		this->verticies = thisObj.importedVerticies;
 		this->index_data = thisObj.importedIndexData;
 
-
-
 		this->GetData();
 	}
 	else if (ext == ".txt")

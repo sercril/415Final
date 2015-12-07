@@ -36,7 +36,10 @@ struct Texture
 	unsigned int textureWidth, textureHeight;
 	unsigned char *imageData;
 
-	Texture() {}
+	Texture() 
+	{
+		this->textureWidth = 0;
+	}
 	Texture(unsigned int textureWidth, unsigned int textureHeight, unsigned char *imageData)
 	{
 		this->textureWidth = textureWidth;
@@ -69,6 +72,7 @@ public:
 	void AddTranslation(gmtl::Vec3f t);
 	void AddRotation(gmtl::Quatf r);
 	void SetTexture(Texture t);
+	void SetNormalMap(Texture n);
 
 	gmtl::Vec3f GetPosition();
 
