@@ -84,11 +84,13 @@
     <ClCompile Include="VertexArrayObject.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Cube_Fragment_Shader.frag" />
-    <None Include="Cube_Vertex_Shader.vert" />
+    <None Include="Cube.frag" />
+    <None Include="Cube.vert" />
     <None Include="Normal.frag" />
     <None Include="Normal.vert" />
     <None Include="packages.config" />
+    <None Include="Sphere.frag" />
+    <None Include="Sphere.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

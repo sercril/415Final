@@ -58,12 +58,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Cube_Fragment_Shader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Cube_Vertex_Shader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="Normal.frag">
       <Filter>Resource Files</Filter>
     </None>
@@ -71,5 +65,17 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="packages.config" />
+    <None Include="Sphere.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Sphere.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Cube.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Cube.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -21,7 +21,6 @@ out vec3 upVector;
 
 uniform vec3 lightPosition;
 uniform mat4 Matrix;
-uniform mat4 NormalMatrix;
 uniform mat4 modelview;
 uniform mat4 PMMatrix;
 uniform vec3 eyeUpVector;

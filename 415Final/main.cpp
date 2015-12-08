@@ -59,9 +59,8 @@ float azimuth, elevation, ballRadius, ballDiameter, cameraZFactor,
 		screenWidth, screenHeight;
 
 
-GLuint program, normal_program, texture_location,
-		lightPosition_loc, ambientLight_loc, diffuseLight_loc, specularLight_loc, NormalMatrix,
-		norm_lightPosition_loc, norm_ambientLight_loc, norm_diffuseLight_loc, norm_specularLight_loc, norm_NormalMatrix;
+GLuint program, normal_program, texture_location, 
+		lightPosition_loc, lightIntensity_loc, norm_lightPosition_loc, norm_lightIntensity_loc;
 
 GLenum errCode;
 
@@ -612,23 +611,17 @@ void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv)
 
 			if (graph[i]->normalMap.textureWidth > 0)
 			{
-				glUniformMatrix4fv(norm_NormalMatrix, 1, GL_FALSE, &viewRotation[0][0]);
 
 				lightPoint = mv * lightPosition;
 				glUniform3f(norm_lightPosition_loc, lightPoint[0], lightPoint[1], lightPoint[2]);
-				glUniform3f(norm_ambientLight_loc, 1.0f, 1.0f, 1.0f);
-				glUniform3f(norm_diffuseLight_loc, 1.0f, 1.0f, 1.0f);
-				glUniform3f(norm_specularLight_loc, 1.0f, 1.0f, 1.0f);
+				glUniform1f(norm_lightIntensity_loc, 1.0f);
 			}
 			else
 			{
-				glUniformMatrix4fv(NormalMatrix, 1, GL_FALSE, &viewRotation[0][0]);
 
 				lightPoint = mv * lightPosition;
 				glUniform3f(lightPosition_loc, lightPoint[0], lightPoint[1], lightPoint[2]);
-				glUniform3f(ambientLight_loc, 1.0f, 1.0f, 1.0f);
-				glUniform3f(diffuseLight_loc, 1.0f, 1.0f, 1.0f);
-				glUniform3f(specularLight_loc, 1.0f, 1.0f, 1.0f);
+				glUniform1f(lightIntensity_loc, 1.0f);
 			}		
 
 			graph[i]->Draw(mv, projection);
@@ -853,19 +846,15 @@ void init()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// Load/compile/link shaders and set to use for rendering
-	ShaderInfo shaders[] = { { GL_VERTEX_SHADER, "Cube_Vertex_Shader.vert" },
-	{ GL_FRAGMENT_SHADER, "Cube_Fragment_Shader.frag" },
+	ShaderInfo shaders[] = { { GL_VERTEX_SHADER, "Cube.vert" },
+	{ GL_FRAGMENT_SHADER, "Cube.frag" },
 	{ GL_NONE, NULL } };
 
 	program = LoadShaders(shaders);	
 	
 	//Get the shader parameter locations for passing data to shaders
-	NormalMatrix = glGetUniformLocation(program, "NormalMatrix");
-	lightPosition_loc = glGetUniformLocation(program, "lightPosition");	
-	ambientLight_loc = glGetUniformLocation(program, "ambientLight");
-	diffuseLight_loc = glGetUniformLocation(program, "diffuseLight");
-	specularLight_loc = glGetUniformLocation(program, "specularLight");
-	
+	lightPosition_loc = glGetUniformLocation(program, "lightPosition");
+	lightIntensity_loc = glGetUniformLocation(program, "lightIntensity");
 
 
 	// Load/compile/link shaders and set to use for rendering
@@ -876,11 +865,8 @@ void init()
 	normal_program = LoadShaders(normal_shaders);
 
 	//Get the shader parameter locations for passing data to shaders
-	norm_NormalMatrix = glGetUniformLocation(normal_program, "NormalMatrix");
 	norm_lightPosition_loc = glGetUniformLocation(normal_program, "lightPosition");
-	norm_ambientLight_loc = glGetUniformLocation(normal_program, "ambientLight");
-	norm_diffuseLight_loc = glGetUniformLocation(normal_program, "diffuseLight");
-	norm_specularLight_loc = glGetUniformLocation(normal_program, "specularLight");
+	norm_lightIntensity_loc = glGetUniformLocation(normal_program, "lightIntensity");
 
 	gmtl::identity(view);
 	gmtl::identity(viewRotation);

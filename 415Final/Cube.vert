@@ -14,7 +14,6 @@ out vec4 fragmentPosition;
 //out vec3 fragmentColor;
 
 uniform mat4 Matrix;
-uniform mat4 NormalMatrix;
 uniform mat4 modelview;
 
 

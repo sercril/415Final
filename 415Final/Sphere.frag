@@ -13,22 +13,20 @@ out vec3 color;
 uniform sampler2D texture_Colors;
 uniform vec3 lightPosition;
 uniform vec3 upVector;
-uniform vec3 ambientLight;
-uniform vec3 diffuseLight;
-uniform vec3 specularLight;
+uniform float lightIntensity;
 
 uniform float specCoefficient;
 uniform float shine;
 
 void main(){
 
-	vec3 normNormal, V, R, lightDirection, normLight, colors;
+	vec3 normNormal, V, R, lightDirection, normLight, colors, lightColor;
 	float lightDotNormal;
 
-	colors = texture2D( texture_Colors, UV * 2.0f ).rgb;
+	lightColor = vec3(1.0,1.0,1.0);
 
-	//normLight = normalize(lightPosition);
-
+	colors = texture2D( texture_Colors, UV).rgb;
+	
 	lightDirection = normalize( lightPosition - fragmentPosition.xyz);
 
 	V = normalize(-fragmentPosition.xyz);
@@ -42,13 +40,13 @@ void main(){
 	color.rgb = vec3(0,0,0);
 	
 	//Ambient
-	color = color + ambientLight * colors * (0.5f + 0.5f * dot(normNormal, normalize(upVector)));
+	color = color + (lightColor * lightIntensity) * colors * (0.5f + 0.5f * dot(normNormal, normalize(upVector)));
 	
 	//Diffuse
-	color = color + diffuseLight * colors * (max(0.0f, dot(normNormal,lightDirection)));
+	color = color + (lightColor * lightIntensity) * colors * (max(0.0f, dot(normNormal,lightDirection)));
 
 	//Spec
-	color = color + specCoefficient * specularLight * pow(max(0.0f,dot(V,R)), shine);
+	color = color + specCoefficient * (lightColor * lightIntensity) * pow(max(0.0f,dot(V,R)), shine);
 
 	//color = vec3(UV,0);
 
