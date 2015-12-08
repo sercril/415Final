@@ -25,7 +25,7 @@ void main(){
 	vec3 normNormal, V, R, lightDirection, normLight, colors;
 	float lightDotNormal;
 
-	colors = texture2D( texture_Colors, UV ).rgb;
+	colors = texture2D( texture_Colors, UV * 2.0f ).rgb;
 
 	//normLight = normalize(lightPosition);
 

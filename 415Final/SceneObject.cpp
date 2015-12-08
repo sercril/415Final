@@ -67,8 +67,8 @@ void SceneObject::Init()
 	this->modelview_loc = glGetUniformLocation(this->VAO.program, "modelview");
 	
 
-	this->specCoefficient = 0.8f;
-	this->shine = 64.0f;
+	this->specCoefficient = 0.4f;
+	this->shine = 512.0f;
 
 	this->mass = 5.0f;
 

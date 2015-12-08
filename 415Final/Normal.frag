@@ -31,7 +31,7 @@ void main()
 	float lightDotNormal;
 
 	colors = texture2D( texture_Colors, UV ).rgb;	
-	normal_colors = texture2D( normal_Colors, UV).rgb;
+	normal_colors = texture2D( normal_Colors, UV * 2.0f).rgb;
 
 	colors = vec3(0.5,0.5,0.5);
 	//normal_colors = vec3(0.5, 0.5, 1.0);
