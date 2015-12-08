@@ -65,22 +65,10 @@ void SceneObject::Init()
 	this->specCoefficient_loc = glGetUniformLocation(this->VAO.program, "specCoefficient");
 	this->shine_loc = glGetUniformLocation(this->VAO.program, "shine");	
 	this->modelview_loc = glGetUniformLocation(this->VAO.program, "modelview");
-	this->texture_location = glGetUniformLocation(this->VAO.program, "texture_Colors");
-
 	
 
-	if (this->VAO.tangent_data.size() > 0)
-	{
-		this->normal_location = glGetUniformLocation(this->VAO.program, "normal_Colors");
-	}
-	else
-	{
-		glBindTexture(GL_TEXTURE_2D, this->texture_location);
-	}
-	
-
-	this->specCoefficient = 0.1f;
-	this->shine = 0.5f;
+	this->specCoefficient = 0.8f;
+	this->shine = 64.0f;
 
 	this->mass = 5.0f;
 
@@ -98,14 +86,16 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 	gmtl::Matrix44f PM = projection * this->translation * rotation;
 	
 
-	this->ApplyTexture(this->texture, GL_TEXTURE0, this->texture_location);
+	this->ApplyTexture(this->texture, GL_TEXTURE0);
+	glUniform1i(this->texture_location, 0);
 
 	if (this->normalMap.textureWidth > 0)
 	{
 		GLuint PMMatrix_loc = glGetUniformLocation(this->VAO.program, "PMMatrix");
 		GLuint eyeUP_loc = glGetUniformLocation(this->VAO.program, "eyeUpVector");
 		
-		this->ApplyTexture(this->normalMap, GL_TEXTURE1, this->normal_location);
+		this->ApplyTexture(this->normalMap, GL_TEXTURE1);
+		glUniform1i(this->normal_location, 1);
 		glUniformMatrix4fv(PMMatrix_loc, 1, GL_FALSE, &PM[0][0]);
 		glUniform3f(eyeUP_loc, viewMatrix[1][0], viewMatrix[1][1], viewMatrix[1][2]);
 	}
@@ -125,8 +115,6 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 	glUniform1f(this->shine_loc, this->shine);
 
 	// Draw the transformed cuboid
-	glEnable(GL_PRIMITIVE_RESTART);
-	glPrimitiveRestartIndex(0xFFFF);
 	glDrawElements(GL_TRIANGLES, this->VAO.index_data.size(), GL_UNSIGNED_SHORT, NULL);
 
 	if (!this->children.empty())
@@ -143,11 +131,34 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 void SceneObject::SetTexture(Texture t)
 {
 	this->texture = t;
+	this->texture_location = glGetUniformLocation(this->VAO.program, "texture_Colors");
+	
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &this->textureNum);
+	glBindTexture(GL_TEXTURE_2D, this->textureNum);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->texture.textureHeight, this->texture.textureWidth, 0, GL_RGB, GL_UNSIGNED_BYTE, this->texture.imageData);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
 
 void SceneObject::SetNormalMap(Texture n)
 {
 	this->normalMap = n;
+	this->normal_location = glGetUniformLocation(this->VAO.program, "normal_Colors");
+	glActiveTexture(GL_TEXTURE1);
+	glGenTextures(1, &this->normalNum);
+	glBindTexture(GL_TEXTURE_2D, this->normalNum);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->normalMap.textureHeight, this->normalMap.textureWidth, 0, GL_RGB, GL_UNSIGNED_BYTE, this->normalMap.imageData);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
 
 void SceneObject::AddTranslation(gmtl::Matrix44f t)
@@ -189,20 +200,19 @@ gmtl::Vec3f SceneObject::GetPosition()
 	return gmtl::Vec3f(float(this->translation[0][3]), float(this->translation[1][3]), float(this->translation[2][3]));
 }
 
-void SceneObject::ApplyTexture(Texture t, GLenum texID, GLuint loc)
+void SceneObject::ApplyTexture(Texture t, GLenum texID)
 {
-	glActiveTexture(texID);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t.textureHeight, t.textureWidth, 0, GL_RGB, GL_UNSIGNED_BYTE, t.imageData);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	if (this->normalMap.textureWidth > 0)
+	if (texID == GL_TEXTURE0)
 	{
-		glBindTexture(GL_TEXTURE_2D, loc);
+		glActiveTexture(GL_TEXTURE0);		
+		glBindTexture(GL_TEXTURE_2D, this->textureNum);
 	}
-	
+	else if (texID == GL_TEXTURE1)
+	{
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, this->normalNum);
+	}	
+
+		
 }

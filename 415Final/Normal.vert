@@ -15,7 +15,7 @@ out vec2 UV;
 out vec3 fragmentNormal;
 out vec4 fragmentPosition;
 out vec3 tangentLight;
-out vec4 view;
+out vec3 view;
 out vec3 upVector;
 //out vec3 fragmentColor;
 
@@ -28,12 +28,13 @@ uniform vec3 eyeUpVector;
 
 void main(){
 	// Output position of the vertex, in clip space : MVP * position
-	gl_Position = PMMatrix * vertexPosition;
+	gl_Position = Matrix * vertexPosition;
 
-	vec4 tanLight, eyePos;
+	vec4 tanLight, eyePos, localview, localUp;
 
 	mat3 matrixM = transpose(inverse(mat3(modelview)));
 	mat4 inverseModelView = inverse(modelview);
+	mat3 tangentMatrix = transpose(mat3(vertTangent,vertBiTangent,vertexNormal));
 
 	// UV of the vertex. No special space for this one.
 	UV = vertexUV;
@@ -44,13 +45,17 @@ void main(){
 	
 	tanLight = inverseModelView * vec4(lightPosition,1);
 	tanLight = tanLight - vertexPosition;
-	tangentLight = vec3( dot(tanLight.xyz, vertTangent), dot(tanLight.xyz, vertBiTangent),dot(tanLight.xyz, vertexNormal));
+	tangentLight = tangentMatrix * tanLight.xyz;
 
 	eyePos = inverseModelView * vec4(0,0,0,1);
-	view = eyePos - vertexPosition;
-	view = vec4( dot(view.xyz, vertTangent), dot(view.xyz, vertBiTangent),dot(view.xyz, vertexNormal), 1);
+	localview = eyePos - vertexPosition;
+	view = tangentMatrix * localview.xyz;
 
-	upVector = vec3( dot(eyeUpVector, vertTangent), dot(eyeUpVector, vertBiTangent),dot(eyeUpVector, vertexNormal));
+	//upVector = vec3( dot(eyeUpVector, vertTangent), dot(eyeUpVector, vertBiTangent),dot(eyeUpVector, vertexNormal));
+	upVector = tangentMatrix * (inverseModelView * vec4(eyeUpVector,0)).xyz;
+	
+
+	//upVector = eyeUpVector
 
 	//fragmentColor = vertexColor;
 }

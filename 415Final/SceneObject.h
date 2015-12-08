@@ -88,10 +88,10 @@ public:
 
 private:
 	void Init();
-	void ApplyTexture(Texture t, GLenum texID, GLuint loc);
+	void ApplyTexture(Texture t, GLenum texID);
 
 	GLuint specCoefficient_loc, shine_loc, upVector_loc, modelview_loc, 
-		texture_location, normal_location;
+		texture_location, normal_location, textureNum, normalNum;
 };
 
 #endif __SCENE_OBJECT_H__

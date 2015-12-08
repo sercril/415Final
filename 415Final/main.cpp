@@ -60,8 +60,8 @@ float azimuth, elevation, ballRadius, ballDiameter, cameraZFactor,
 
 
 GLuint program, normal_program, texture_location,
-		lightPosition_loc, ambientLight_loc, diffuseLight_loc, specularLight_loc, 
-		NormalMatrix;
+		lightPosition_loc, ambientLight_loc, diffuseLight_loc, specularLight_loc, NormalMatrix,
+		norm_lightPosition_loc, norm_ambientLight_loc, norm_diffuseLight_loc, norm_specularLight_loc, norm_NormalMatrix;
 
 GLenum errCode;
 
@@ -128,7 +128,7 @@ void cameraRotate()
 
 	originalView = cameraTrans * azimuthRotation * elevationRotation * cameraZ;
 
-	view = gmtl::invert(originalView);
+	view = gmtl::invert(cameraTrans * azimuthRotation * elevationRotation * cameraZ);
 
 	glutPostRedisplay();
 }
@@ -297,8 +297,8 @@ void buildGraph()
 	initialTranslation = gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(0.0f, floorDimensions[1] + ballDiameter+1.0f, 100.0f));
 	initialTranslation.setState(gmtl::Matrix44f::TRANS);
 	ball->AddTranslation(initialTranslation);
-	ball->SetTexture(LoadTexture("textures/Berry_Diffuse.ppm"));
-	ball->SetNormalMap(LoadTexture("textures/Berry_Normal.ppm"));
+	ball->SetTexture(LoadTexture("textures/Berry_Diffuse_square.ppm"));
+	ball->SetNormalMap(LoadTexture("textures/Berry_Normal_square.ppm"));
 	//ball->velocity = ZERO_VECTOR;
 	ball->acceleration = ZERO_VECTOR;
 
@@ -603,23 +603,33 @@ void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv)
 	
 	if(!graph.empty())
 	{
-
-
 		for (int i = 0; i < graph.size(); ++i)
 		{
 
 			glUseProgram(graph[i]->VAO.program);
 	
 			glBindVertexArray(graph[i]->VAO.vertexArray);
-			
-			glUniformMatrix4fv(NormalMatrix, 1, GL_FALSE, &viewRotation[0][0]);
-			
-			lightPoint = mv * lightPosition;
-			glUniform3f(lightPosition_loc, lightPoint[0], lightPoint[1], lightPoint[2]);
-			glUniform3f(ambientLight_loc, 1.0f, 1.0f, 1.0f);
-			glUniform3f(diffuseLight_loc, 1.0f, 1.0f, 1.0f);
-			glUniform3f(specularLight_loc, 1.0f, 1.0f, 1.0f);
-			
+
+			if (graph[i]->normalMap.textureWidth > 0)
+			{
+				glUniformMatrix4fv(norm_NormalMatrix, 1, GL_FALSE, &viewRotation[0][0]);
+
+				lightPoint = mv * lightPosition;
+				glUniform3f(norm_lightPosition_loc, lightPoint[0], lightPoint[1], lightPoint[2]);
+				glUniform3f(norm_ambientLight_loc, 1.0f, 1.0f, 1.0f);
+				glUniform3f(norm_diffuseLight_loc, 1.0f, 1.0f, 1.0f);
+				glUniform3f(norm_specularLight_loc, 1.0f, 1.0f, 1.0f);
+			}
+			else
+			{
+				glUniformMatrix4fv(NormalMatrix, 1, GL_FALSE, &viewRotation[0][0]);
+
+				lightPoint = mv * lightPosition;
+				glUniform3f(lightPosition_loc, lightPoint[0], lightPoint[1], lightPoint[2]);
+				glUniform3f(ambientLight_loc, 1.0f, 1.0f, 1.0f);
+				glUniform3f(diffuseLight_loc, 1.0f, 1.0f, 1.0f);
+				glUniform3f(specularLight_loc, 1.0f, 1.0f, 1.0f);
+			}		
 
 			graph[i]->Draw(mv, projection);
 		}
@@ -646,7 +656,6 @@ void mouse(int button, int state, int x, int y)
 
 		P = gmtl::Point3f(leftValue + ((mouseX + 0.5f) / screenWidth)*(rightValue - leftValue), topValue - ((mouseY + 0.5f) / screenHeight)*(topValue - bottomValue), -nearValue);
 		
-		originalView = gmtl::invert(view);
 
 		P = originalView * P;
 
@@ -655,6 +664,7 @@ void mouse(int button, int state, int x, int y)
 		ray = P - eyePos;
 		ProcessHit(gmtl::Rayf(eyePos, ray));
 	}
+
 }
 
 void mouseMotion(int x, int y)
@@ -779,16 +789,14 @@ void keyboard(unsigned char key, int x, int y)
 			cameraZFactor += 10.f;
 			cameraZ = gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(0.0f, 0.0f, cameraZFactor));
 			cameraZ.setState(gmtl::Matrix44f::TRANS);
-			view = cameraTrans * azimuthRotation * elevationRotation * cameraZ;
-			gmtl::invert(view);			
+			cameraRotate();
 			break;
 
 		case 'z':
 			cameraZFactor -= 10.f;
 			cameraZ = gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(0.0f, 0.0f, cameraZFactor));
 			cameraZ.setState(gmtl::Matrix44f::TRANS);
-			view = cameraTrans * azimuthRotation * elevationRotation * cameraZ;
-			gmtl::invert(view);
+			cameraRotate();
 			break;
 
 		case 033 /* Escape key */:
@@ -868,11 +876,11 @@ void init()
 	normal_program = LoadShaders(normal_shaders);
 
 	//Get the shader parameter locations for passing data to shaders
-	NormalMatrix = glGetUniformLocation(normal_program, "NormalMatrix");
-	lightPosition_loc = glGetUniformLocation(normal_program, "lightPosition");
-	ambientLight_loc = glGetUniformLocation(normal_program, "ambientLight");
-	diffuseLight_loc = glGetUniformLocation(normal_program, "diffuseLight");
-	specularLight_loc = glGetUniformLocation(normal_program, "specularLight");
+	norm_NormalMatrix = glGetUniformLocation(normal_program, "NormalMatrix");
+	norm_lightPosition_loc = glGetUniformLocation(normal_program, "lightPosition");
+	norm_ambientLight_loc = glGetUniformLocation(normal_program, "ambientLight");
+	norm_diffuseLight_loc = glGetUniformLocation(normal_program, "diffuseLight");
+	norm_specularLight_loc = glGetUniformLocation(normal_program, "specularLight");
 
 	gmtl::identity(view);
 	gmtl::identity(viewRotation);
