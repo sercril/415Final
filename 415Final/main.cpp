@@ -281,7 +281,7 @@ void buildGraph()
 {
 	
 	SceneObject* ball = new SceneObject("OBJs/SphereFull.txt", ballRadius, normal_program);
-	SceneObject* ball2 = new SceneObject("OBJs/smoothSphere.obj", ballRadius, program);
+	SceneObject* ball2 = new SceneObject("OBJs/smoothSphere2.obj", ballRadius, program);
 	SceneObject* ball3 = new SceneObject("OBJs/smoothSphere.obj", ballRadius, program);
 	gmtl::Vec3f floorDimensions = gmtl::Vec3f(150.0f, 5.0f, 150.0f);
 	SceneObject* floor = new SceneObject("OBJs/cube.obj", floorDimensions, program);
@@ -312,7 +312,7 @@ void buildGraph()
 	initialTranslation = gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(75.0f, floorDimensions[1] + ballDiameter + 1.0f, 100.0f));
 	initialTranslation.setState(gmtl::Matrix44f::TRANS);
 	ball2->AddTranslation(initialTranslation);
-	ball2->SetTexture(LoadTexture("textures/earth.ppm"));
+	ball2->SetTexture(LoadTexture("textures/earth_square_flipped.ppm"));
 	//ball->velocity = ZERO_VECTOR;
 	ball2->acceleration = ZERO_VECTOR;
 

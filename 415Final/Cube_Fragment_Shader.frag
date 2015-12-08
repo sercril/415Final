@@ -50,6 +50,6 @@ void main(){
 	//Spec
 	color = color + specCoefficient * specularLight * pow(max(0.0f,dot(V,R)), shine);
 
-	//color = lightDirection;
+	//color = vec3(UV,0);
 
 }
