@@ -23,7 +23,7 @@ void main(){
 	vec3 normNormal, V, R, lightDirection, normLight, colors, lightColor;
 	float lightDotNormal;
 
-	colors = texture2D( texture_Colors, UV * 2.0f ).rgb;
+	colors = texture2D( texture_Colors, UV * 8.0f ).rgb;
 
 	lightColor = vec3(1.0,1.0,1.0);
 

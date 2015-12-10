@@ -73,6 +73,7 @@ public:
 	void AddRotation(gmtl::Quatf r);
 	void SetTexture(Texture t);
 	void SetNormalMap(Texture n);
+	void SetLight(gmtl::Point3f lightPosition, GLfloat lightIntensity);
 
 	gmtl::Vec3f GetPosition();
 
@@ -90,8 +91,12 @@ private:
 	void Init();
 	void ApplyTexture(Texture t, GLenum texID);
 
-	GLuint specCoefficient_loc, shine_loc, upVector_loc, modelview_loc, 
+	GLuint specCoefficient_loc, shine_loc, upVector_loc, modelview_loc,
+		lightPosition_loc, lightIntensity_loc,
 		texture_location, normal_location, textureNum, normalNum;
+
+	gmtl::Point3f lightPosition;
+	GLfloat lightIntensity;
 };
 
 #endif __SCENE_OBJECT_H__

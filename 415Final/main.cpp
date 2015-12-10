@@ -54,20 +54,21 @@ simStep;
 bool hit, c_tableCenter, c_cueFollow, c_cue, legballdist, bounce, attract;
 
 float azimuth, elevation, ballRadius, ballDiameter, cameraZFactor,
-		drag, restitutionBall, restitutionWall, hitScale, delta,
-		nearValue, farValue, topValue, bottomValue, leftValue, rightValue,
-		screenWidth, screenHeight;
+drag, restitutionBall, restitutionWall, hitScale, delta,
+nearValue, farValue, topValue, bottomValue, leftValue, rightValue,
+screenWidth, screenHeight, ipd, frustumScale, focalDepth;
 
 
-GLuint program, normal_program, texture_location, 
-		lightPosition_loc, lightIntensity_loc, norm_lightPosition_loc, norm_lightIntensity_loc;
+GLuint cubeProgram, normalProgram, sphereProgram, texture_location;
 
 GLenum errCode;
+
+GLfloat lightIntensity;
 
 const GLubyte *errString;
 
 
-gmtl::Matrix44f view, projection, originalView,
+gmtl::Matrix44f view, leftProjection, rightProjection, originalView,
 				elevationRotation, azimuthRotation, cameraZ, viewRotation, cameraTrans;
 
 SceneObject *attractLeg, *hitBall;
@@ -75,7 +76,7 @@ SceneObject *attractLeg, *hitBall;
 std::vector<SceneObject*> sceneGraph;
 std::vector<Vertex> ballData;
 std::vector<Collision> collsionList;
-gmtl::Point3f lightPosition, lightPoint;
+gmtl::Point3f lightPosition;
 
 gmtl::Vec3f ballDelta, hitDirection;
 
@@ -181,25 +182,25 @@ SceneObject* AddWall(int i, gmtl::Vec3f floorDimensions)
 	switch (i)
 	{
 		case 0:
-			wall = new SceneObject("OBJs/cube.obj", floorDimensions[0] + (ballDiameter*2), wallHeight, ballDiameter, program);
+			wall = new SceneObject("OBJs/cube.obj", floorDimensions[0] + (ballDiameter*2), wallHeight, ballDiameter, cubeProgram);
 			wall->AddTranslation(gmtl::Vec3f(0.0f, wallHeight, floorDimensions[2] + ballDiameter));
 			wall->type = BACK_WALL;
 			break;
 
 		case 1:
-			wall = new SceneObject("OBJs/cube.obj", floorDimensions[0] + (ballDiameter * 2), wallHeight, ballDiameter, program);
+			wall = new SceneObject("OBJs/cube.obj", floorDimensions[0] + (ballDiameter * 2), wallHeight, ballDiameter, cubeProgram);
 			wall->AddTranslation(gmtl::Vec3f(0.0f, wallHeight, -floorDimensions[2]  - ballDiameter));
 			wall->type = FRONT_WALL;
 			break;
 
 		case 2:
-			wall = new SceneObject("OBJs/cube.obj", ballDiameter, wallHeight, floorDimensions[2], program);
+			wall = new SceneObject("OBJs/cube.obj", ballDiameter, wallHeight, floorDimensions[2], cubeProgram);
 			wall->AddTranslation(gmtl::Vec3f(floorDimensions[0] + ballDiameter, wallHeight, 0.0f));
 			wall->type = RIGHT_WALL;
 			break;
 
 		case 3:
-			wall = new SceneObject("OBJs/cube.obj", ballDiameter, wallHeight, floorDimensions[2], program);
+			wall = new SceneObject("OBJs/cube.obj", ballDiameter, wallHeight, floorDimensions[2], cubeProgram);
 			wall->AddTranslation(gmtl::Vec3f(-floorDimensions[0] - ballDiameter, wallHeight, 0.0f));
 			wall->type = LEFT_WALL;
 			break;
@@ -209,6 +210,7 @@ SceneObject* AddWall(int i, gmtl::Vec3f floorDimensions)
 	wall->children.clear();
 	wall->SetTexture(LoadTexture("textures/dirt.ppm"));
 	wall->mass = FLT_MAX;
+	wall->SetLight(lightPosition, lightIntensity);
 	return wall;
 }
 
@@ -219,16 +221,17 @@ void buildTable(gmtl::Vec3f floorDimensions)
 		tableWidth = 25.0f,  //X
 		tableLength = 25.0f; //Z
 
-	SceneObject* tableTop = new SceneObject("OBJs/cube.obj", tableWidth, floorDimensions[1], tableLength, program);
+	SceneObject* tableTop = new SceneObject("OBJs/cube.obj", tableWidth, floorDimensions[1], tableLength, cubeProgram);
 	tableTop->AddTranslation(gmtl::Vec3f(0.0f, legY+floorDimensions[1]+legHeight, 0.0f));
 	tableTop->type = TABLETOP;
 	tableTop->parent = NULL;
 	tableTop->SetTexture(LoadTexture("textures/dirt.ppm"));
 	tableTop->children.clear();
+	tableTop->SetLight(lightPosition, lightIntensity);
 
 	sceneGraph.push_back(tableTop);
 
-	SceneObject* brleg = new SceneObject("OBJs/cylinder.obj", ballRadius, legHeight, program);
+	SceneObject* brleg = new SceneObject("OBJs/cylinder.obj", ballRadius, legHeight, sphereProgram);
 	brleg->AddTranslation(gmtl::Vec3f(tableWidth - ballRadius, legY, -(tableWidth - ballRadius)));
 	brleg->type = LEG;
 	brleg->parent = NULL;
@@ -236,10 +239,11 @@ void buildTable(gmtl::Vec3f floorDimensions)
 	brleg->children.clear();
 	brleg->mass = FLT_MAX;
 	brleg->velocity = ZERO_VECTOR;
+	brleg->SetLight(lightPosition, lightIntensity);
 
 	sceneGraph.push_back(brleg);
 
-	SceneObject* blleg = new SceneObject("OBJs/cylinder.obj", ballRadius, legHeight, program);
+	SceneObject* blleg = new SceneObject("OBJs/cylinder.obj", ballRadius, legHeight, sphereProgram);
 	blleg->AddTranslation(gmtl::Vec3f(-(tableWidth - ballRadius), legY, -(tableWidth - ballRadius)));
 	blleg->type = LEG;
 	blleg->parent = NULL;
@@ -247,10 +251,11 @@ void buildTable(gmtl::Vec3f floorDimensions)
 	blleg->children.clear();
 	blleg->mass = FLT_MAX;
 	blleg->velocity = ZERO_VECTOR;
+	blleg->SetLight(lightPosition, lightIntensity);
 
 	sceneGraph.push_back(blleg);
 
-	SceneObject* frleg = new SceneObject("OBJs/cylinder.obj", ballRadius, legHeight, program);
+	SceneObject* frleg = new SceneObject("OBJs/cylinder.obj", ballRadius, legHeight, sphereProgram);
 	frleg->AddTranslation(gmtl::Vec3f(tableWidth - ballRadius, legY, tableWidth - ballRadius));
 	frleg->type = LEG;
 	frleg->parent = NULL;
@@ -258,11 +263,12 @@ void buildTable(gmtl::Vec3f floorDimensions)
 	frleg->children.clear();
 	frleg->mass = FLT_MAX;
 	frleg->velocity = ZERO_VECTOR;
+	frleg->SetLight(lightPosition, lightIntensity);
 
 	attractLeg = frleg;
 	sceneGraph.push_back(frleg);	
 
-	SceneObject* flleg = new SceneObject("OBJs/cylinder.obj", ballRadius, legHeight, program);
+	SceneObject* flleg = new SceneObject("OBJs/cylinder.obj", ballRadius, legHeight, sphereProgram);
 	flleg->AddTranslation(gmtl::Vec3f(-(tableWidth - ballRadius), legY, tableWidth - ballRadius));
 	flleg->type = LEG;
 	flleg->parent = NULL;
@@ -270,6 +276,7 @@ void buildTable(gmtl::Vec3f floorDimensions)
 	flleg->children.clear();
 	flleg->mass = FLT_MAX;
 	flleg->velocity = ZERO_VECTOR;
+	flleg->SetLight(lightPosition, lightIntensity);
 
 	sceneGraph.push_back(flleg);
 
@@ -279,11 +286,11 @@ void buildTable(gmtl::Vec3f floorDimensions)
 void buildGraph()
 {
 	
-	SceneObject* ball = new SceneObject("OBJs/SphereFull.txt", ballRadius, normal_program);
-	SceneObject* ball2 = new SceneObject("OBJs/smoothSphere2.obj", ballRadius, program);
-	SceneObject* ball3 = new SceneObject("OBJs/smoothSphere.obj", ballRadius, program);
+	SceneObject* ball = new SceneObject("OBJs/SphereFull.txt", ballRadius, normalProgram);
+	SceneObject* ball2 = new SceneObject("OBJs/smoothSphere2.obj", ballRadius, sphereProgram);
+	SceneObject* ball3 = new SceneObject("OBJs/smoothSphere.obj", ballRadius, sphereProgram);
 	gmtl::Vec3f floorDimensions = gmtl::Vec3f(150.0f, 5.0f, 150.0f);
-	SceneObject* floor = new SceneObject("OBJs/cube.obj", floorDimensions, program);
+	SceneObject* floor = new SceneObject("OBJs/cube.obj", floorDimensions, cubeProgram);
 	gmtl::Matrix44f initialTranslation;
 	gmtl::Quatf initialRotation;
 
@@ -298,6 +305,7 @@ void buildGraph()
 	ball->AddTranslation(initialTranslation);
 	ball->SetTexture(LoadTexture("textures/Berry_Diffuse_square.ppm"));
 	ball->SetNormalMap(LoadTexture("textures/Berry_Normal_square.ppm"));
+	ball->SetLight(lightPosition, lightIntensity);
 	//ball->velocity = ZERO_VECTOR;
 	ball->acceleration = ZERO_VECTOR;
 
@@ -312,6 +320,7 @@ void buildGraph()
 	initialTranslation.setState(gmtl::Matrix44f::TRANS);
 	ball2->AddTranslation(initialTranslation);
 	ball2->SetTexture(LoadTexture("textures/earth_square_flipped.ppm"));
+	ball2->SetLight(lightPosition, lightIntensity);
 	//ball->velocity = ZERO_VECTOR;
 	ball2->acceleration = ZERO_VECTOR;
 
@@ -325,6 +334,7 @@ void buildGraph()
 	initialTranslation.setState(gmtl::Matrix44f::TRANS);
 	floor->AddTranslation(initialTranslation);
 	floor->SetTexture(LoadTexture("textures/carpet.ppm"));
+	floor->SetLight(lightPosition, lightIntensity);
 
 	sceneGraph.push_back(floor);
 
@@ -423,28 +433,6 @@ bool IsCollided(SceneObject* obj1, SceneObject* obj2)
 }
 
 // TODO Combine Traverse and Render somehow
-/*void traverseGraph(std::vector<SceneObject*> graph)
-{
-	if (!graph.empty())
-	{
-		for (int i = 0; i < graph.size(); ++i)
-		{
-			if (!graph[i]->children.empty())
-			{
-				for (std::vector<SceneObject *>::iterator it = graph[i]->children.begin();
-					it < graph[i]->children.end();
-					++it)
-				{
-					traverseGraph((*it)->children);
-				}
-			}
-
-
-
-		}
-	}
-} */
-
 
 void HandleCollisions()
 {
@@ -463,16 +451,14 @@ void HandleCollisions()
 				
 				
 				if (IsCollided(checkObj, (*innerIt)))
-				{
-
-					
+				{				
 					collsionList.push_back(Collision(checkObj, (*innerIt)));
 					
 					collisionNormal = checkObj->GetPosition() - (*innerIt)->GetPosition();
 					collisionNormal = gmtl::makeNormal(collisionNormal);
 					collisionNormal[1] = 0.0f;
 
-					cout << gmtl::dot((checkObj->velocity - (*innerIt)->velocity), collisionNormal) << endl;
+					//cout << gmtl::dot((checkObj->velocity - (*innerIt)->velocity), collisionNormal) << endl;
 					if (gmtl::dot((checkObj->velocity - (*innerIt)->velocity), collisionNormal) <= 1.0f)
 					{
 						switch ((*innerIt)->type)
@@ -559,7 +545,6 @@ void ApplyForces()
 		
 	}
 }
-
 void ProcessHit(gmtl::Rayf ray)
 {
 	gmtl::Spheref ball;
@@ -604,33 +589,35 @@ void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv)
 	{
 		for (int i = 0; i < graph.size(); ++i)
 		{
-
 			glUseProgram(graph[i]->VAO.program);
-	
+
 			glBindVertexArray(graph[i]->VAO.vertexArray);
 
-			if (graph[i]->normalMap.textureWidth > 0)
-			{
+			glDrawBuffer(GL_BACK_LEFT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+						
+			graph[i]->Draw(mv, leftProjection * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(ipd, 0.0f,0.0f)));
 
-				lightPoint = mv * lightPosition;
-				glUniform3f(norm_lightPosition_loc, lightPoint[0], lightPoint[1], lightPoint[2]);
-				glUniform1f(norm_lightIntensity_loc, 1.0f);
-			}
-			else
-			{
+			glDrawBuffer(GL_BACK_LEFT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				lightPoint = mv * lightPosition;
-				glUniform3f(lightPosition_loc, lightPoint[0], lightPoint[1], lightPoint[2]);
-				glUniform1f(lightIntensity_loc, 1.0f);
-			}		
-
-			graph[i]->Draw(mv, projection);
+			graph[i]->Draw(mv, rightProjection * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(-ipd, 0.0f, 0.0f)));
 		}
 	}
 	
 	return;
 }
+void UpdateLightPosition(gmtl::Vec3f translation)
+{
+	lightPosition += translation;
+	cout << lightPosition << endl;
 
+	for (std::vector<SceneObject*>::iterator it = sceneGraph.begin(); it < sceneGraph.end(); ++it)
+	{
+		(*it)->SetLight(lightPosition, lightIntensity);
+	}
+
+}
 #pragma endregion
 
 #pragma region "Input"
@@ -667,14 +654,31 @@ void mouseMotion(int x, int y)
 	mouseDeltaY = y - mouseY;
 
 
-	elevation += degreesToRadians(arcToDegrees(mouseDeltaY)) / (screenHeight/2);
-	azimuth += degreesToRadians(arcToDegrees(mouseDeltaX)) / (screenWidth /2 );
+	elevation += degreesToRadians(arcToDegrees(mouseDeltaY*1.0f)) / (screenHeight/2);
+	azimuth += degreesToRadians(arcToDegrees(mouseDeltaX*1.0f)) / (screenWidth / 2);
 
 	cameraRotate();
 
 	mouseX = x;
 	mouseY = y;
 
+}
+
+void mouseWheel(int button, int dir, int x, int y)
+{
+	if (dir < 0)
+	{
+		cameraZFactor += 10.f;
+		cameraZ = gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(0.0f, 0.0f, cameraZFactor));
+	}
+	else
+	{
+		cameraZFactor -= 10.f;
+		cameraZ = gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(0.0f, 0.0f, cameraZFactor));		
+	}
+
+	cameraZ.setState(gmtl::Matrix44f::TRANS);
+	cameraRotate();
 }
 
 # pragma endregion
@@ -685,43 +689,6 @@ void keyboard(unsigned char key, int x, int y)
 {
 	switch (key) 
 	{
-
-		case '1':
-			hitScale = 1.0f;
-			break;
-
-		case '2':
-			hitScale = 2.0f;
-			break;
-
-		case '3':
-			hitScale = 3.0f;
-			break;
-
-		case '4':
-			hitScale = 4.0f;
-			break;
-
-		case '5':
-			hitScale = 5.0f;
-			break;
-
-		case '6':
-			hitScale = 6.0f;
-			break;
-
-		case '7':
-			hitScale = 7.0f;
-			break;
-
-		case '8':
-			hitScale = 8.0f;
-			break;
-
-		case '9':
-			hitScale = 9.0f;
-			break;
-			
 		case 'f':
 			c_cueFollow = true;
 			c_cue = c_tableCenter = false;
@@ -743,54 +710,34 @@ void keyboard(unsigned char key, int x, int y)
 			sceneGraph[0]->mass = max(0.0f, sceneGraph[0]->mass - 1.0f);
 			break;
 
-		case 'j':
-			restitutionBall = min(restitutionBall + 0.01f,1.0f);
+		case 'w':
+			UpdateLightPosition(gmtl::Vec3f(0.0f, 5.0f, 0.0f));
 			break;
-
-		case 'J':
-			restitutionBall = max(0.0f, restitutionBall - 0.01f);
+		case 's':
+			UpdateLightPosition(gmtl::Vec3f(0.0f, -5.0f, 0.0f));
 			break;
-
-		case 'n':
-			restitutionWall = min(restitutionWall + 0.01f, 1.0f);
+		case 'a':
+			UpdateLightPosition(gmtl::Vec3f(-5.0f, 0.0f, 0.0f));
 			break;
-
-		case 'N':
-			restitutionWall = max(0.0f, restitutionWall - 0.01f);
+		case 'd':
+			UpdateLightPosition(gmtl::Vec3f(5.0f, 0.0f, 0.0f));
 			break;
-
-		
-
-		case 'h':
-			delta += max(1.0f, delta + 0.01f);
+		case 'e':
+			UpdateLightPosition(gmtl::Vec3f(0.0f, 0.0f, 5.0f));
 			break;
-
-		case 'H':
-			delta = max(delta - 0.01f, 0.0f);
+		case 'q':
+			UpdateLightPosition(gmtl::Vec3f(0.0f, 0.0f, -5.0f));
 			break;
-
-
-		case 'b':
+			
+		/*case 'b':
 			bounce = (bounce ? false:true);
 			break;
 
 		case 'a':
 			attract = (attract ? false : true);
-			break;
+			break;*/
 
-		case 'Z':
-			cameraZFactor += 10.f;
-			cameraZ = gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(0.0f, 0.0f, cameraZFactor));
-			cameraZ.setState(gmtl::Matrix44f::TRANS);
-			cameraRotate();
-			break;
-
-		case 'z':
-			cameraZFactor -= 10.f;
-			cameraZ = gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(0.0f, 0.0f, cameraZFactor));
-			cameraZ.setState(gmtl::Matrix44f::TRANS);
-			cameraRotate();
-			break;
+		
 
 		case 033 /* Escape key */:
 			exit(EXIT_SUCCESS);
@@ -846,46 +793,63 @@ void init()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// Load/compile/link shaders and set to use for rendering
-	ShaderInfo shaders[] = { { GL_VERTEX_SHADER, "Cube.vert" },
+	ShaderInfo cubeShaders[] = { { GL_VERTEX_SHADER, "Cube.vert" },
 	{ GL_FRAGMENT_SHADER, "Cube.frag" },
 	{ GL_NONE, NULL } };
 
-	program = LoadShaders(shaders);	
-	
-	//Get the shader parameter locations for passing data to shaders
-	lightPosition_loc = glGetUniformLocation(program, "lightPosition");
-	lightIntensity_loc = glGetUniformLocation(program, "lightIntensity");
-
+	cubeProgram = LoadShaders(cubeShaders);
 
 	// Load/compile/link shaders and set to use for rendering
-	ShaderInfo normal_shaders[] = { { GL_VERTEX_SHADER, "Normal.vert" },
+	ShaderInfo normalMappedShaders[] = { { GL_VERTEX_SHADER, "Normal.vert" },
 	{ GL_FRAGMENT_SHADER, "Normal.frag" },
 	{ GL_NONE, NULL } };
 
-	normal_program = LoadShaders(normal_shaders);
+	normalProgram = LoadShaders(normalMappedShaders);
 
-	//Get the shader parameter locations for passing data to shaders
-	norm_lightPosition_loc = glGetUniformLocation(normal_program, "lightPosition");
-	norm_lightIntensity_loc = glGetUniformLocation(normal_program, "lightIntensity");
+	// Load/compile/link shaders and set to use for rendering
+	ShaderInfo sphereShaders[] = { { GL_VERTEX_SHADER, "Sphere.vert" },
+	{ GL_FRAGMENT_SHADER, "Sphere.frag" },
+	{ GL_NONE, NULL } };
+
+	sphereProgram = LoadShaders(sphereShaders);
 
 	gmtl::identity(view);
 	gmtl::identity(viewRotation);
 	gmtl::identity(cameraTrans);
 
-	lightPosition.set(0.0f, 20.0f, 0.0f);
+	lightPosition.set(-10.0f, 65.0f, 0.0f);
+	lightIntensity = 0.75f;
 
-	nearValue = 1.0f;
+	/*nearValue = 1.0f;
 	farValue = 1000.0f;
 	topValue = screenHeight / screenWidth;
 	bottomValue = topValue * -1.0f;
 	rightValue = 1.0f;
-	leftValue = -1.0f;
+	leftValue = -1.0f;*/
 
-	projection.set(
-		((2.0f * nearValue) / (rightValue - leftValue)), 0.0f, ((rightValue + leftValue) / (rightValue - leftValue)), 0.0f,
-		0.0f, ((2.0f * nearValue) / (topValue - bottomValue)), ((topValue + bottomValue) / (topValue - bottomValue)), 0.0f,
+	ipd = 0.07f / 2;
+	nearValue = 1.0f;
+	farValue = 100.0f;
+	topValue = 0.68f;
+	bottomValue = -1.6f;
+	rightValue = 2.05f;
+	leftValue = -2.05f;
+	focalDepth = 2.5f;
+	frustumScale = nearValue / focalDepth;
+	
+
+	leftProjection.set(
+		((2.0f * nearValue) / (((rightValue + ipd)*frustumScale) - ((leftValue + ipd) * frustumScale))), 0.0f, ((((rightValue + ipd)*frustumScale) + ((leftValue + ipd) * frustumScale)) / (((rightValue + ipd)*frustumScale) - ((leftValue + ipd) * frustumScale))), 0.0f,
+		0.0f, ((2.0f * nearValue) / ((topValue*frustumScale) - (bottomValue*frustumScale))), (((topValue*frustumScale) + (bottomValue*frustumScale)) / ((topValue*frustumScale) - (bottomValue*frustumScale))), 0.0f,
 		0.0f, 0.0f, ((-1.0f * (farValue + nearValue)) / (farValue - nearValue)), ((-2.0f*farValue*nearValue)/(farValue-nearValue)),
 		0.0f,0.0f,-1.0f,0.0f		
+		);
+
+	rightProjection.set(
+		((2.0f * nearValue) / (((rightValue + ipd)*frustumScale) - ((leftValue + ipd) * frustumScale))), 0.0f, ((((rightValue + ipd)*frustumScale) + ((leftValue + ipd) * frustumScale)) / (((rightValue + ipd)*frustumScale) - ((leftValue + ipd) * frustumScale))), 0.0f,
+		0.0f, ((2.0f * nearValue) / ((topValue*frustumScale) - (bottomValue*frustumScale))), (((topValue*frustumScale) + (bottomValue*frustumScale)) / ((topValue*frustumScale) - (bottomValue*frustumScale))), 0.0f,
+		0.0f, 0.0f, ((-1.0f * (farValue + nearValue)) / (farValue - nearValue)), ((-2.0f*farValue*nearValue) / (farValue - nearValue)),
+		0.0f, 0.0f, -1.0f, 0.0f
 		);
 
 	cameraZFactor = 350.0f;
@@ -936,7 +900,7 @@ int main(int argc, char** argv)
 	glutInit(&argc, argv);
 
 	//Specify the display mode
-	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
+	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STEREO);
 	screenWidth = SCREEN_WIDTH;
 	screenHeight = SCREEN_HEIGHT;
 	//Set the window size/dimensions
@@ -946,6 +910,8 @@ int main(int argc, char** argv)
 	// We use 3.3 in thie class, not supported by very old cards
 	glutInitContextVersion(3, 3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
+
+	glutFullScreen();
 
 	glutCreateWindow("415/515 DEMO");
 
@@ -960,8 +926,10 @@ int main(int argc, char** argv)
 	glutKeyboardFunc(keyboard);
 	glutMouseFunc(mouse);
 	glutMotionFunc(mouseMotion);
+	glutMouseWheelFunc(mouseWheel);
 	glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
+	
 
 	//Transfer the control to glut processing loop.
 	glutMainLoop();

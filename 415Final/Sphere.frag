@@ -14,7 +14,6 @@ uniform sampler2D texture_Colors;
 uniform vec3 lightPosition;
 uniform vec3 upVector;
 uniform float lightIntensity;
-
 uniform float specCoefficient;
 uniform float shine;
 

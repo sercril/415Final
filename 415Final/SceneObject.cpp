@@ -65,6 +65,8 @@ void SceneObject::Init()
 	this->specCoefficient_loc = glGetUniformLocation(this->VAO.program, "specCoefficient");
 	this->shine_loc = glGetUniformLocation(this->VAO.program, "shine");	
 	this->modelview_loc = glGetUniformLocation(this->VAO.program, "modelview");
+	this->lightPosition_loc = glGetUniformLocation(this->VAO.program, "lightPosition");
+	this->lightIntensity_loc = glGetUniformLocation(this->VAO.program, "lightIntensity");
 	
 
 	this->specCoefficient = 0.4f;
@@ -84,6 +86,7 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 	gmtl::Matrix44f newMV = viewMatrix * this->translation * rotation;
 	gmtl::Matrix44f render = projection * newMV * this->scale;
 	gmtl::Matrix44f PM = projection * this->translation * rotation;
+	gmtl::Point3f lightPoint = viewMatrix * lightPosition;
 	
 
 	this->ApplyTexture(this->texture, GL_TEXTURE0);
@@ -107,12 +110,11 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 
 	
 	glUniformMatrix4fv(this->VAO.matrix_loc, 1, GL_FALSE, &render[0][0]);
-
-
-	
 	glUniformMatrix4fv(this->modelview_loc, 1, GL_FALSE, &newMV[0][0]);
 	glUniform1f(this->specCoefficient_loc, this->specCoefficient);
 	glUniform1f(this->shine_loc, this->shine);
+	glUniform3f(this->lightPosition_loc, lightPoint[0], lightPoint[1], lightPoint[2]);
+	glUniform1f(this->lightIntensity_loc, this->lightIntensity);
 
 	// Draw the transformed cuboid
 	glDrawElements(GL_TRIANGLES, this->VAO.index_data.size(), GL_UNSIGNED_SHORT, NULL);
@@ -174,6 +176,12 @@ void SceneObject::AddTranslation(gmtl::Vec3f t)
 void SceneObject::AddRotation(gmtl::Quatf r)
 {
 	this->rotation = r * this->rotation;
+}
+
+void SceneObject::SetLight(gmtl::Point3f lightPosition, GLfloat lightIntensity)
+{
+	this->lightPosition = lightPosition;
+	this->lightIntensity = lightIntensity;
 }
 
 void SceneObject::Move()

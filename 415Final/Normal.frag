@@ -28,11 +28,11 @@ void main()
 	float lightDotNormal;
 	
 	colors = texture2D( texture_Colors, UV ).rgb;	
-	normal_colors = texture2D( normal_Colors, UV * 2.0f).rgb;
+	normal_colors = texture2D( normal_Colors, UV ).rgb;
 
 	lightColor = vec3(1.0,1.0,1.0);
 
-	colors = vec3(0.5,0.5,0.5);
+	//colors = vec3(0.5,0.5,0.5);
 
 	normTangentLight = normalize(tangentLight);
 	normUp = normalize(upVector);
@@ -48,7 +48,7 @@ void main()
 	lightDotNormal = dot(decodedNormal, normTangentLight);
 	
 	R = normalize(2 * lightDotNormal * decodedNormal - normLightDirection);
-	R = reflect(-normLightDirection, decodedNormal);
+	//R = reflect(-normLightDirection, decodedNormal);
 	color.rgb = vec3(0,0,0);
 	
 	//Ambient
