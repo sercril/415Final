@@ -631,7 +631,7 @@ void UpdateLightPosition(gmtl::Vec3f translation)
 
 void mouse(int button, int state, int x, int y)
 {
-	gmtl::Point3f P, eyePos;
+	gmtl::Point3f leftP, rightP, eyePos;
 	gmtl::Vec3f ray;
 
 	if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON)
@@ -639,26 +639,29 @@ void mouse(int button, int state, int x, int y)
 		mouseX = x;
 		mouseY = y;
 
-		P = gmtl::Point3f(leftValue + ((mouseX + 0.5f) / screenWidth)*(rightValue - leftValue), topValue - ((mouseY + 0.5f) / screenHeight)*(topValue - bottomValue), -nearValue);
+		leftP = gmtl::Point3f(((leftValue + ipd) * frustumScale) + ((mouseX + 0.5f) / screenWidth)*(((rightValue + ipd)*frustumScale) - ((leftValue + ipd) * frustumScale)), (topValue*frustumScale) - ((mouseY + 0.5f) / screenHeight)*((topValue*frustumScale) - (bottomValue*frustumScale)), -nearValue);
 		
 		originalView = view * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(ipd, 0.0f, 0.0f));
 		gmtl::invert(originalView);
-		P = originalView * P;
+		leftP = originalView * leftP;
 
 		eyePos = gmtl::Point3f(originalView[0][3], originalView[1][3], originalView[2][3]);
 
-		ray = P - eyePos;
+		ray = leftP - eyePos;
 		ProcessHit(gmtl::Rayf(eyePos, ray));
 
 		if (!hit)
 		{
+
+			rightP = gmtl::Point3f(((leftValue - ipd) * frustumScale) + ((mouseX + 0.5f) / screenWidth)*(((rightValue - ipd)*frustumScale) - ((leftValue - ipd) * frustumScale)), (topValue*frustumScale) - ((mouseY + 0.5f) / screenHeight)*((topValue*frustumScale) - (bottomValue*frustumScale)), -nearValue);
+
 			originalView = view * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(-ipd, 0.0f, 0.0f));
 			gmtl::invert(originalView);
-			P = originalView * P;
+			rightP = originalView * rightP;
 
 			eyePos = gmtl::Point3f(originalView[0][3], originalView[1][3], originalView[2][3]);
 
-			ray = P - eyePos;
+			ray = rightP - eyePos;
 			ProcessHit(gmtl::Rayf(eyePos, ray));
 		}
 	}
