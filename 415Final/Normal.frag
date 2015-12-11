@@ -48,7 +48,7 @@ void main()
 	lightDotNormal = dot(decodedNormal, normTangentLight);
 	
 	R = normalize(2 * lightDotNormal * decodedNormal - normLightDirection);
-	//R = reflect(-normLightDirection, decodedNormal);
+	
 	color.rgb = vec3(0,0,0);
 	
 	//Ambient

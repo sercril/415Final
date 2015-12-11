@@ -27,6 +27,12 @@ using namespace std;
 
 #pragma region Structs and Enums
 
+enum Eye
+{
+	LEFT = 0,
+	RIGHT
+};
+
 struct Collision
 {
 	SceneObject* a;
@@ -582,26 +588,25 @@ void ProcessHit(gmtl::Rayf ray)
 	}
 
 }
-void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv)
+void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv, int eye)
 {
-	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	if(!graph.empty())
 	{
 		for (int i = 0; i < graph.size(); ++i)
 		{
 			glUseProgram(graph[i]->VAO.program);
 
-			glBindVertexArray(graph[i]->VAO.vertexArray);
+			glBindVertexArray(graph[i]->VAO.vertexArray);			
 
-			glDrawBuffer(GL_BACK_LEFT);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-						
-			graph[i]->Draw(mv, leftProjection * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(ipd, 0.0f,0.0f)));
-
-			glDrawBuffer(GL_BACK_LEFT);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			graph[i]->Draw(mv, rightProjection * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(-ipd, 0.0f, 0.0f)));
+			if (eye == 0)
+			{
+				graph[i]->Draw(mv * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(ipd, 0.0f, 0.0f)), leftProjection);
+			}
+			else
+			{
+				graph[i]->Draw(mv  * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(-ipd, 0.0f, 0.0f)), rightProjection);
+			}
 		}
 	}
 	
@@ -636,13 +641,26 @@ void mouse(int button, int state, int x, int y)
 
 		P = gmtl::Point3f(leftValue + ((mouseX + 0.5f) / screenWidth)*(rightValue - leftValue), topValue - ((mouseY + 0.5f) / screenHeight)*(topValue - bottomValue), -nearValue);
 		
-
+		originalView = view * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(ipd, 0.0f, 0.0f));
+		gmtl::invert(originalView);
 		P = originalView * P;
 
 		eyePos = gmtl::Point3f(originalView[0][3], originalView[1][3], originalView[2][3]);
 
 		ray = P - eyePos;
 		ProcessHit(gmtl::Rayf(eyePos, ray));
+
+		if (!hit)
+		{
+			originalView = view * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(-ipd, 0.0f, 0.0f));
+			gmtl::invert(originalView);
+			P = originalView * P;
+
+			eyePos = gmtl::Point3f(originalView[0][3], originalView[1][3], originalView[2][3]);
+
+			ray = P - eyePos;
+			ProcessHit(gmtl::Rayf(eyePos, ray));
+		}
 	}
 
 }
@@ -829,7 +847,7 @@ void init()
 
 	ipd = 0.07f / 2;
 	nearValue = 1.0f;
-	farValue = 100.0f;
+	farValue = 1000.0f;
 	topValue = 0.68f;
 	bottomValue = -1.6f;
 	rightValue = 2.05f;
@@ -846,7 +864,7 @@ void init()
 		);
 
 	rightProjection.set(
-		((2.0f * nearValue) / (((rightValue + ipd)*frustumScale) - ((leftValue + ipd) * frustumScale))), 0.0f, ((((rightValue + ipd)*frustumScale) + ((leftValue + ipd) * frustumScale)) / (((rightValue + ipd)*frustumScale) - ((leftValue + ipd) * frustumScale))), 0.0f,
+		((2.0f * nearValue) / (((rightValue - ipd)*frustumScale) - ((leftValue - ipd) * frustumScale))), 0.0f, ((((rightValue - ipd)*frustumScale) + ((leftValue - ipd) * frustumScale)) / (((rightValue - ipd)*frustumScale) - ((leftValue - ipd) * frustumScale))), 0.0f,
 		0.0f, ((2.0f * nearValue) / ((topValue*frustumScale) - (bottomValue*frustumScale))), (((topValue*frustumScale) + (bottomValue*frustumScale)) / ((topValue*frustumScale) - (bottomValue*frustumScale))), 0.0f,
 		0.0f, 0.0f, ((-1.0f * (farValue + nearValue)) / (farValue - nearValue)), ((-2.0f*farValue*nearValue) / (farValue - nearValue)),
 		0.0f, 0.0f, -1.0f, 0.0f
@@ -867,11 +885,11 @@ void init()
 }
 void display()
 {
+	glDrawBuffer(GL_BACK_LEFT);
+	renderGraph(sceneGraph, view, LEFT);
 
-	// Clear the color and depth buffers
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	renderGraph(sceneGraph, view);
+	glDrawBuffer(GL_BACK_RIGHT);
+	renderGraph(sceneGraph, view, RIGHT);
 	//Ask GL to execute the commands from the buffer
 	glutSwapBuffers();	// *** if you are using GLUT_DOUBLE, use glutSwapBuffers() instead 
 
@@ -911,9 +929,8 @@ int main(int argc, char** argv)
 	glutInitContextVersion(3, 3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 
-	glutFullScreen();
-
 	glutCreateWindow("415/515 DEMO");
+	glutFullScreen();
 
 	glewExperimental = GL_TRUE;
 
