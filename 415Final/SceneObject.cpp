@@ -88,6 +88,10 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 	gmtl::Matrix44f PM = projection * this->translation * rotation;
 	gmtl::Point3f lightPoint = viewMatrix * lightPosition;
 	
+	
+	glUseProgram(this->VAO.program);
+
+	glBindVertexArray(this->VAO.vertexArray);
 
 	this->ApplyTexture(this->texture, GL_TEXTURE0);
 	glUniform1i(this->texture_location, 0);

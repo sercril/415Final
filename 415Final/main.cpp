@@ -67,7 +67,7 @@ screenWidth, screenHeight, ipd, frustumScale, focalDepth;
 
 GLuint cubeProgram, normalProgram, sphereProgram, renderTextureProgram,
 framebuffer, depthbuffer, renderTexture, renderTexture_loc,
-framebuffer_vertex_buffer, framebuffer_vertposition_loc, time_loc,
+framebuffer_vertex_buffer, framebuffer_vertposition_loc, time_loc, frameVertexArray,
 DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
 
 GLenum errCode;
@@ -601,7 +601,7 @@ void ProcessHit(gmtl::Rayf ray)
 }
 void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv, int eye)
 {
-
+	
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	glViewport(0, 0, screenWidth, screenHeight);
@@ -612,20 +612,22 @@ void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv, int eye)
 	{
 		for (int i = 0; i < graph.size(); ++i)
 		{
-			glUseProgram(graph[i]->VAO.program);
-
-			glBindVertexArray(graph[i]->VAO.vertexArray);		
+				
 
 			if (eye == LEFT)
 			{
+
+				
 				graph[i]->Draw(mv * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(ipd, 0.0f, 0.0f)), leftProjection);
 			}
 			else
-			{
+			{				
 				graph[i]->Draw(mv  * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(-ipd, 0.0f, 0.0f)), rightProjection);
 			}
 		}
 	}
+
+
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, screenWidth, screenHeight);
@@ -635,19 +637,11 @@ void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv, int eye)
 	glBindTexture(GL_TEXTURE2, renderTexture);
 	glUniform1i(renderTexture_loc, 2);
 
-	glEnableVertexAttribArray(framebuffer_vertposition_loc);
-	glBindBuffer(GL_ARRAY_BUFFER, framebuffer_vertex_buffer);
-	glVertexAttribPointer(framebuffer_vertposition_loc,
-		3, // Size
-		GL_FLOAT, // Type
-		GL_FALSE, // Is normalized
-		0, ((void*)0));
+	
+	glBindVertexArray(frameVertexArray);
+	
 		
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	//glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_SHORT, NULL);
-
-	//glDisableVertexAttribArray(framebuffer_vertposition_loc);
-	
 	
 	return;
 }
@@ -787,16 +781,7 @@ void keyboard(unsigned char key, int x, int y)
 			break;
 		case 'q':
 			UpdateLightPosition(gmtl::Vec3f(0.0f, 0.0f, -5.0f));
-			break;
-			
-		/*case 'b':
-			bounce = (bounce ? false:true);
-			break;
-
-		case 'a':
-			attract = (attract ? false : true);
-			break;*/
-
+			break;    
 		
 
 		case 033 /* Escape key */:
@@ -913,9 +898,19 @@ void init()
 		return;
 	}
 
+	glGenVertexArrays(1, &frameVertexArray);
+	glBindVertexArray(frameVertexArray);
 	glGenBuffers(1, &framebuffer_vertex_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, framebuffer_vertex_buffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(framebuffer_vertex_buffer_data), framebuffer_vertex_buffer_data, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(framebuffer_vertposition_loc,
+		3, // Size
+		GL_FLOAT, // Type
+		GL_FALSE, // Is normalized
+		0, ((void*)0));
+	glEnableVertexAttribArray(framebuffer_vertposition_loc);
+
+	
 
 	gmtl::identity(view);
 	gmtl::identity(viewRotation);
@@ -971,22 +966,26 @@ void init()
 }
 void display()
 {
+	
 
 	glDrawBuffer(GL_BACK_LEFT);
 	renderGraph(sceneGraph, view, LEFT);
 
 	glDrawBuffer(GL_BACK_RIGHT);
 	renderGraph(sceneGraph, view, RIGHT);
+
+	
+
 	//Ask GL to execute the commands from the buffer
 	glutSwapBuffers();	// *** if you are using GLUT_DOUBLE, use glutSwapBuffers() instead 
 
 	//Check for any errors and print the error string.
 	//NOTE: The string returned by gluErrorString must not be altered.
-	if ((errCode = glGetError()) != GL_NO_ERROR)
+	/*if ((errCode = glGetError()) != GL_NO_ERROR)
 	{
 		errString = gluErrorString(errCode);
 		cout << "OpengGL Error: " << errString << endl;
-	}
+	}*/
 }
 void reshape(int width, int height)
 {
