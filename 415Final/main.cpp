@@ -65,7 +65,8 @@ nearValue, farValue, topValue, bottomValue, leftValue, rightValue,
 screenWidth, screenHeight, ipd, frustumScale, focalDepth;
 
 
-GLuint cubeProgram, normalProgram, sphereProgram, texture_location;
+GLuint cubeProgram, normalProgram, sphereProgram, texture_location, 
+	framebuffer, depthbuffer, renderTexture;
 
 GLenum errCode;
 
@@ -831,6 +832,27 @@ void init()
 	ShaderInfo sphereShaders[] = { { GL_VERTEX_SHADER, "Sphere.vert" },
 	{ GL_FRAGMENT_SHADER, "Sphere.frag" },
 	{ GL_NONE, NULL } };
+
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+	glGenTextures(1, &renderTexture);
+	glBindTexture(GL_TEXTURE_2D, renderTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screenWidth, screenHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glGenRenderbuffers(1, &depthbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screenWidth, screenHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthbuffer);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderTexture, 0);
+
+	
 
 	sphereProgram = LoadShaders(sphereShaders);
 
