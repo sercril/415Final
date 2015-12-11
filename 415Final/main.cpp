@@ -65,10 +65,13 @@ nearValue, farValue, topValue, bottomValue, leftValue, rightValue,
 screenWidth, screenHeight, ipd, frustumScale, focalDepth;
 
 
-GLuint cubeProgram, normalProgram, sphereProgram, texture_location, 
-	framebuffer, depthbuffer, renderTexture;
+GLuint cubeProgram, normalProgram, sphereProgram, renderTextureProgram,
+framebuffer, depthbuffer, renderTexture, renderTexture_loc,
+framebuffer_vertex_buffer, framebuffer_vertposition_loc, time_loc,
+DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
 
 GLenum errCode;
+
 
 GLfloat lightIntensity;
 
@@ -87,7 +90,14 @@ gmtl::Point3f lightPosition;
 
 gmtl::Vec3f ballDelta, hitDirection;
 
-
+static const GLfloat framebuffer_vertex_buffer_data[] = {
+	-1.0f, -1.0f, 0.0f,
+	1.0f, -1.0f, 0.0f,
+	-1.0f, 1.0f, 0.0f,
+	-1.0f, 1.0f, 0.0f,
+	1.0f, -1.0f, 0.0f,
+	1.0f, 1.0f, 0.0f,
+};
 
 #pragma endregion
 
@@ -591,6 +601,12 @@ void ProcessHit(gmtl::Rayf ray)
 }
 void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv, int eye)
 {
+
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	glViewport(0, 0, screenWidth, screenHeight);
+	
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	if(!graph.empty())
 	{
@@ -598,9 +614,9 @@ void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv, int eye)
 		{
 			glUseProgram(graph[i]->VAO.program);
 
-			glBindVertexArray(graph[i]->VAO.vertexArray);			
+			glBindVertexArray(graph[i]->VAO.vertexArray);		
 
-			if (eye == 0)
+			if (eye == LEFT)
 			{
 				graph[i]->Draw(mv * gmtl::makeTrans<gmtl::Matrix44f>(gmtl::Vec3f(ipd, 0.0f, 0.0f)), leftProjection);
 			}
@@ -610,6 +626,28 @@ void renderGraph(std::vector<SceneObject*> graph, gmtl::Matrix44f mv, int eye)
 			}
 		}
 	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, screenWidth, screenHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glUseProgram(renderTextureProgram);
+	glBindTexture(GL_TEXTURE2, renderTexture);
+	glUniform1i(renderTexture_loc, 2);
+
+	glEnableVertexAttribArray(framebuffer_vertposition_loc);
+	glBindBuffer(GL_ARRAY_BUFFER, framebuffer_vertex_buffer);
+	glVertexAttribPointer(framebuffer_vertposition_loc,
+		3, // Size
+		GL_FLOAT, // Type
+		GL_FALSE, // Is normalized
+		0, ((void*)0));
+		
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	//glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_SHORT, NULL);
+
+	//glDisableVertexAttribArray(framebuffer_vertposition_loc);
+	
 	
 	return;
 }
@@ -803,7 +841,7 @@ void init()
 	hit = c_tableCenter = c_cueFollow = c_cue = bounce = attract = false;
 	hitScale = 3.0f;
 	drag = 0.1f;
-	restitutionBall =  0.0f;
+	restitutionBall =  1.0f;
 	restitutionWall = 1.0f;
 	simStep = 1;
 
@@ -833,17 +871,31 @@ void init()
 	{ GL_FRAGMENT_SHADER, "Sphere.frag" },
 	{ GL_NONE, NULL } };
 
+	sphereProgram = LoadShaders(sphereShaders);
+	
+	//Render to Texture code
+	// Load/compile/link shaders and set to use for rendering
+	ShaderInfo renderTextureShaders[] = { { GL_VERTEX_SHADER, "RenderTex.vert" },
+	{ GL_FRAGMENT_SHADER, "RenderTex.frag" },
+	{ GL_NONE, NULL } };
+
+	renderTextureProgram = LoadShaders(renderTextureShaders);
+
+	renderTexture_loc = glGetUniformLocation(renderTextureProgram, "renderTexture");
+	framebuffer_vertposition_loc = glGetAttribLocation(renderTextureProgram, "vertexPosition");
+
 	glGenFramebuffers(1, &framebuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
+	glActiveTexture(GL_TEXTURE2);
 	glGenTextures(1, &renderTexture);
 	glBindTexture(GL_TEXTURE_2D, renderTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screenWidth, screenHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	glGenRenderbuffers(1, &depthbuffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthbuffer);
@@ -853,8 +905,17 @@ void init()
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderTexture, 0);
 
 	
+	glDrawBuffers(1, DrawBuffers);
 
-	sphereProgram = LoadShaders(sphereShaders);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		cout << "Frame buffer problem" << endl;
+		return;
+	}
+
+	glGenBuffers(1, &framebuffer_vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, framebuffer_vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(framebuffer_vertex_buffer_data), framebuffer_vertex_buffer_data, GL_DYNAMIC_DRAW);
 
 	gmtl::identity(view);
 	gmtl::identity(viewRotation);
@@ -910,6 +971,7 @@ void init()
 }
 void display()
 {
+
 	glDrawBuffer(GL_BACK_LEFT);
 	renderGraph(sceneGraph, view, LEFT);
 
@@ -956,6 +1018,13 @@ int main(int argc, char** argv)
 
 	glutCreateWindow("415/515 DEMO");
 	glutFullScreen();
+
+	glEnable(GL_DEPTH_TEST);
+	// Accept fragment if it closer to the camera than the former one
+	glDepthFunc(GL_LESS);
+
+	// Cull triangles which normal is not towards the camera
+	glEnable(GL_CULL_FACE);
 
 	glewExperimental = GL_TRUE;
 

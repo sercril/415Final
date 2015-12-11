@@ -30,6 +30,7 @@ class VertexArrayObject
 
 		void GenerateSmoothNormals();
 		void GenerateSplitNormals();
+		void DisableAttributes();
 
 		GLuint vertexArray, matrix_loc, program;
 		std::vector<Vertex> verticies;

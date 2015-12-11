@@ -119,6 +119,8 @@ void SceneObject::Draw(gmtl::Matrix44f viewMatrix, gmtl::Matrix44f projection)
 	// Draw the transformed cuboid
 	glDrawElements(GL_TRIANGLES, this->VAO.index_data.size(), GL_UNSIGNED_SHORT, NULL);
 
+	//this->VAO.DisableAttributes();
+
 	if (!this->children.empty())
 	{
 		for (std::vector<SceneObject *>::iterator it = this->children.begin();

@@ -82,7 +82,7 @@ VertexArrayObject::VertexArrayObject(string objectFile, GLuint program)
 		sizeof(&this->index_data[0])*this->index_data.size(),
 		&this->index_data[0], GL_DYNAMIC_DRAW);
 
-	if (tangent_data.size() > 0)
+	if (this->tangent_data.size() > 0)
 	{
 		this->tangent_loc = glGetAttribLocation(this->program, "vertTangent");
 
@@ -93,7 +93,7 @@ VertexArrayObject::VertexArrayObject(string objectFile, GLuint program)
 		glEnableVertexAttribArray(this->tangent_loc);
 	}
 
-	if (bitangent_data.size() > 0)
+	if (this->bitangent_data.size() > 0)
 	{
 		this->bitangent_loc = glGetAttribLocation(this->program, "vertBiTangent");
 
@@ -102,6 +102,23 @@ VertexArrayObject::VertexArrayObject(string objectFile, GLuint program)
 		glBufferData(GL_ARRAY_BUFFER, sizeof(&this->bitangent_data[0])*this->bitangent_data.size(), &this->bitangent_data[0], GL_DYNAMIC_DRAW);
 		glVertexAttribPointer(this->bitangent_loc, 3, GL_FLOAT, GL_FALSE, 0, ((void*)0));
 		glEnableVertexAttribArray(this->bitangent_loc);
+	}
+}
+
+void VertexArrayObject::DisableAttributes()
+{
+	glDisableVertexAttribArray(this->vertexBuffer);
+	glDisableVertexAttribArray(this->uvBuffer);
+	glDisableVertexAttribArray(this->normalBuffer);
+
+	if (this->tangent_data.size() > 0)
+	{
+		glDisableVertexAttribArray(this->tangentBuffer);
+	}
+
+	if (this->bitangent_data.size() > 0)
+	{
+		glDisableVertexAttribArray(this->bitangentBuffer);
 	}
 }
 
